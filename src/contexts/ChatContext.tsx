@@ -51,31 +51,17 @@ const ChatContext = createContext<ChatContextType>({
 export const useChat = () => useContext(ChatContext);
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, backendUrl } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChat, setCurrentChat] = useState<Chat | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [processingFiles, setProcessingFiles] = useState(false);
 
-  // Load chats from localStorage on component mount and when user changes
+  // Fetch chats from API when user is authenticated
   useEffect(() => {
     if (user) {
-      const storedChats = localStorage.getItem(`chats-${user.id}`);
-      if (storedChats) {
-        try {
-          const parsedChats = JSON.parse(storedChats) as Chat[];
-          setChats(parsedChats);
-          
-          // Set most recent chat as current if none is selected
-          if (!currentChat && parsedChats.length > 0) {
-            setCurrentChat(parsedChats[0]);
-          }
-        } catch (error) {
-          console.error("Failed to parse stored chats:", error);
-          localStorage.removeItem(`chats-${user.id}`);
-        }
-      }
+      fetchChats();
     } else {
       // If no user, reset everything
       setChats([]);
@@ -83,26 +69,62 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  // Save chats to localStorage whenever they change
-  useEffect(() => {
-    if (user && chats.length > 0) {
-      localStorage.setItem(`chats-${user.id}`, JSON.stringify(chats));
-    }
-  }, [chats, user]);
+  const fetchChats = async () => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
 
-  const createChat = () => {
-    if (!user) return;
+    try {
+      const response = await fetch(`${backendUrl}/api/chats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const fetchedChats = await response.json();
+        setChats(fetchedChats);
+        
+        // Set most recent chat as current if none is selected
+        if (!currentChat && fetchedChats.length > 0) {
+          setCurrentChat(fetchedChats[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch chats:", error);
+      toast.error("Failed to load chat history");
+    }
+  };
+
+  const createChat = async () => {
+    if (!user) {
+      toast.error("Please log in to create a chat");
+      return;
+    }
     
-    const newChat: Chat = {
-      id: `chat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      title: "New Chat",
-      messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
     
-    setChats(prevChats => [newChat, ...prevChats]);
-    setCurrentChat(newChat);
+    try {
+      const response = await fetch(`${backendUrl}/api/chats`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title: "New Chat" })
+      });
+      
+      if (response.ok) {
+        const newChat = await response.json();
+        setChats(prevChats => [newChat, ...prevChats]);
+        setCurrentChat(newChat);
+      } else {
+        throw new Error("Failed to create chat");
+      }
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      toast.error("Failed to create new chat");
+    }
   };
 
   const sendMessage = async (content: string) => {
@@ -111,15 +133,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+    
     setIsLoading(true);
     
     try {
       // Create a copy of the current chat to work with
       const chatCopy = { ...currentChat };
       
-      // Add user message
+      // Add user message locally first for immediate feedback
       const userMessage: Message = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        id: `temp-${Date.now()}`,
         role: "user",
         content,
         timestamp: Date.now(),
@@ -131,41 +156,27 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Update the current chat immediately to show user message
       setCurrentChat(chatCopy);
       
-      // Update the chats list
-      setChats(prevChats =>
-        prevChats.map(chat => (chat.id === chatCopy.id ? chatCopy : chat))
-      );
+      // Send message to the backend
+      const response = await fetch(`${backendUrl}/api/chats/${currentChat.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ content })
+      });
       
-      // Generate a title for the chat if this is the first message
-      if (chatCopy.messages.length === 1 && chatCopy.title === "New Chat") {
-        const shortenedTitle = content.slice(0, 30) + (content.length > 30 ? "..." : "");
-        chatCopy.title = shortenedTitle;
-        
-        // Update again with the new title
-        setCurrentChat({ ...chatCopy });
-        setChats(prevChats =>
-          prevChats.map(chat => (chat.id === chatCopy.id ? { ...chatCopy } : chat))
-        );
+      if (!response.ok) {
+        throw new Error("Failed to send message");
       }
       
-      // Simulate AI response delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Get updated chat with AI response
+      const updatedChat = await response.json();
       
-      // Add AI response
-      const aiMessage: Message = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        role: "assistant",
-        content: "This is a simulated response from the RAG-based chatbot. In a full implementation, this would query relevant documents and generate a contextually appropriate response using Meta LLaMA via LangChain.",
-        timestamp: Date.now(),
-      };
-      
-      chatCopy.messages = [...chatCopy.messages, aiMessage];
-      chatCopy.updatedAt = Date.now();
-      
-      // Update the current chat and chats list with AI response
-      setCurrentChat({ ...chatCopy });
+      // Update the current chat and chats list with response from backend
+      setCurrentChat(updatedChat);
       setChats(prevChats =>
-        prevChats.map(chat => (chat.id === chatCopy.id ? { ...chatCopy } : chat))
+        prevChats.map(chat => (chat.id === updatedChat.id ? updatedChat : chat))
       );
     } catch (error) {
       console.error("Error sending message:", error);
@@ -175,24 +186,64 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteChat = (chatId: string) => {
-    setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+  const deleteChat = async (chatId: string) => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
     
-    if (currentChat?.id === chatId) {
-      const remainingChats = chats.filter(chat => chat.id !== chatId);
-      setCurrentChat(remainingChats.length > 0 ? remainingChats[0] : null);
+    try {
+      const response = await fetch(`${backendUrl}/api/chats/${chatId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+        
+        if (currentChat?.id === chatId) {
+          const remainingChats = chats.filter(chat => chat.id !== chatId);
+          setCurrentChat(remainingChats.length > 0 ? remainingChats[0] : null);
+        }
+      } else {
+        throw new Error("Failed to delete chat");
+      }
+    } catch (error) {
+      console.error("Error deleting chat:", error);
+      toast.error("Failed to delete chat");
     }
   };
 
-  const renameChat = (chatId: string, newTitle: string) => {
-    setChats(prevChats =>
-      prevChats.map(chat =>
-        chat.id === chatId ? { ...chat, title: newTitle } : chat
-      )
-    );
+  const renameChat = async (chatId: string, newTitle: string) => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
     
-    if (currentChat?.id === chatId) {
-      setCurrentChat({ ...currentChat, title: newTitle });
+    try {
+      const response = await fetch(`${backendUrl}/api/chats/${chatId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title: newTitle })
+      });
+      
+      if (response.ok) {
+        const updatedChat = await response.json();
+        
+        setChats(prevChats =>
+          prevChats.map(chat => chat.id === chatId ? updatedChat : chat)
+        );
+        
+        if (currentChat?.id === chatId) {
+          setCurrentChat(updatedChat);
+        }
+      } else {
+        throw new Error("Failed to rename chat");
+      }
+    } catch (error) {
+      console.error("Error renaming chat:", error);
+      toast.error("Failed to rename chat");
     }
   };
 
@@ -202,40 +253,53 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+    
     setUploadingFiles(true);
     
     try {
-      // Simulate file upload delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('files', file);
+      });
       
-      toast.success(`${files.length} file(s) uploaded successfully`);
+      const response = await fetch(`${backendUrl}/api/chats/${currentChat.id}/documents`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to upload documents");
+      }
+      
+      const result = await response.json();
       
       setProcessingFiles(true);
       
-      // Simulate processing delay
+      // We need to poll for status or receive a webhook when processing is complete
+      // For now, we'll just simulate a delay and then fetch the updated chat
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Add system message about the processed files
-      const fileNames = files.map(file => file.name).join(", ");
-      const systemMessage: Message = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        role: "system",
-        content: `Processed ${files.length} document(s): ${fileNames}`,
-        timestamp: Date.now(),
-      };
+      // Fetch the updated chat with the system message about processed files
+      const chatResponse = await fetch(`${backendUrl}/api/chats/${currentChat.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
-      const updatedChat = { 
-        ...currentChat,
-        messages: [...currentChat.messages, systemMessage],
-        updatedAt: Date.now()
-      };
+      if (chatResponse.ok) {
+        const updatedChat = await chatResponse.json();
+        setCurrentChat(updatedChat);
+        setChats(prevChats =>
+          prevChats.map(chat => (chat.id === updatedChat.id ? updatedChat : chat))
+        );
+      }
       
-      setCurrentChat(updatedChat);
-      setChats(prevChats =>
-        prevChats.map(chat => (chat.id === updatedChat.id ? updatedChat : chat))
-      );
-      
-      toast.success("Documents processed and ready for querying");
+      toast.success(`${files.length} document(s) processed and ready for querying`);
     } catch (error) {
       console.error("Error uploading documents:", error);
       toast.error("Failed to upload documents. Please try again.");
@@ -251,32 +315,45 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
+    const token = localStorage.getItem("auth_token");
+    if (!token) return;
+    
     setProcessingFiles(true);
     
     try {
-      // Simulate web scraping delay
+      const response = await fetch(`${backendUrl}/api/chats/${currentChat.id}/websites`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ urls })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to process websites");
+      }
+      
+      // Similar to document upload, we'd need to poll for status or receive a webhook
+      // For now, simulate a delay
       await new Promise(resolve => setTimeout(resolve, 2500));
       
-      // Add system message about the processed websites
-      const systemMessage: Message = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        role: "system",
-        content: `Processed ${urls.length} website(s): ${urls.join(", ")}`,
-        timestamp: Date.now(),
-      };
+      // Fetch the updated chat
+      const chatResponse = await fetch(`${backendUrl}/api/chats/${currentChat.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
-      const updatedChat = { 
-        ...currentChat,
-        messages: [...currentChat.messages, systemMessage],
-        updatedAt: Date.now()
-      };
+      if (chatResponse.ok) {
+        const updatedChat = await chatResponse.json();
+        setCurrentChat(updatedChat);
+        setChats(prevChats =>
+          prevChats.map(chat => (chat.id === updatedChat.id ? updatedChat : chat))
+        );
+      }
       
-      setCurrentChat(updatedChat);
-      setChats(prevChats =>
-        prevChats.map(chat => (chat.id === updatedChat.id ? updatedChat : chat))
-      );
-      
-      toast.success("Websites processed and ready for querying");
+      toast.success(`${urls.length} website(s) processed and ready for querying`);
     } catch (error) {
       console.error("Error processing websites:", error);
       toast.error("Failed to process websites. Please try again.");

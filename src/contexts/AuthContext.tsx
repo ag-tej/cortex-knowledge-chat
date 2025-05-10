@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
+  backendUrl: string;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   signup: async () => {},
   logout: () => {},
+  backendUrl: "http://localhost:8000", // Default backend URL (for local development)
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -29,45 +31,63 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const backendUrl = "http://localhost:8000"; // This should be configured from an environment variable in a real app
 
   // Check if user is already logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse stored user:", error);
-        localStorage.removeItem("user");
-      }
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      fetchUserProfile(token);
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
-  // For demo purposes, we'll simulate authentication
-  // In a real app, this would call your backend API
+  const fetchUserProfile = async (token: string) => {
+    try {
+      const response = await fetch(`${backendUrl}/api/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        // Token is invalid or expired
+        localStorage.removeItem("auth_token");
+      }
+    } catch (error) {
+      console.error("Failed to fetch user profile:", error);
+      localStorage.removeItem("auth_token");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`${backendUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
       
-      // Basic validation
-      if (!email.includes('@') || password.length < 6) {
-        throw new Error("Invalid credentials");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to login");
       }
       
-      // Simple mock user - in real app, this would come from your backend
-      const mockUser = {
-        id: "user-" + Math.random().toString(36).substr(2, 9),
-        email,
-        name: email.split('@')[0],
-      };
+      const data = await response.json();
+      localStorage.setItem("auth_token", data.access_token);
       
-      // Save to localStorage
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      setUser(mockUser);
+      // Fetch user profile with the token
+      await fetchUserProfile(data.access_token);
       toast.success("Logged in successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to login");
@@ -81,24 +101,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`${backendUrl}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password, name })
+      });
       
-      // Basic validation
-      if (!email.includes('@') || password.length < 6) {
-        throw new Error("Invalid credentials");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create account");
       }
       
-      // Simple mock user - in real app, this would be created in your backend
-      const mockUser = {
-        id: "user-" + Math.random().toString(36).substr(2, 9),
-        email,
-        name: name || email.split('@')[0],
-      };
+      const data = await response.json();
+      localStorage.setItem("auth_token", data.access_token);
       
-      // Save to localStorage
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      setUser(mockUser);
+      // Fetch user profile with the token
+      await fetchUserProfile(data.access_token);
       toast.success("Account created successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
@@ -109,13 +129,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("auth_token");
     setUser(null);
     toast.success("Logged out successfully");
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, backendUrl }}>
       {children}
     </AuthContext.Provider>
   );
