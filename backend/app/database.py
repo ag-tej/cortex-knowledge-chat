@@ -1,7 +1,6 @@
-
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 import os
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 # Load environment variables
 load_dotenv()
@@ -16,15 +15,12 @@ db = None
 
 async def init_db():
     global client, db
-    
     # Connect to MongoDB
     client = AsyncIOMotorClient(MONGODB_URL)
     db = client[DB_NAME]
-    
     # Create indexes
     await db.users.create_index("email", unique=True)
     await db.chats.create_index("user_id")
-    
     print("Connected to MongoDB")
     return db
 

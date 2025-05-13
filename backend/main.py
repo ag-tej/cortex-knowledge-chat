@@ -1,39 +1,22 @@
-
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Body
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from passlib.context import CryptContext
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
-import os
-import shutil
-import uuid
-from dotenv import load_dotenv
-import asyncio
-import json
 
-# Import our application modules
-from app.auth import auth_router, get_current_active_user, User, TokenData
-from app.database import init_db, get_db
+# Import app modules
+from app.auth import auth_router
 from app.chat import chat_router
-from app.rag import process_document, process_website, query_rag
-
-# Load environment variables
-load_dotenv()
+from app.database import init_db
 
 # Create FastAPI app
 app = FastAPI(
     title="RAG Chatbot API",
-    description="API for a RAG-based chatbot using LLaMA-2 and sentence transformers",
+    description="API for a RAG-based chatbot",
     version="1.0.0"
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["*"],  # In production, set allowed origins explicitly
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
