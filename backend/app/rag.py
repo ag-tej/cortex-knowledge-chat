@@ -1,4 +1,3 @@
-import os
 import uuid
 import requests
 from typing import List
@@ -36,8 +35,8 @@ embeddings = HuggingFaceEmbeddings(
 
 # Initialize LLM
 llm = OllamaLLM(
-    model="mistral",
-    temperature=0.7,
+    model="llama3.2",
+    temperature=0.5,
     top_p=0.95,
     num_ctx=2048,
     repeat_penalty=1.1,
@@ -163,7 +162,7 @@ async def query_rag(db: AsyncIOMotorDatabase, chat_id: str, query: str) -> str:
                 history_msgs.append(AIMessage(content=msg["content"]))
         # Step 2: Generate self-contained query using LLM
         contextualize_prompt = ChatPromptTemplate.from_messages([
-            ("system", "Given the chat history, rewrite the user's question to be fully self-contained."),
+            ("system", "Given the chat history, rewrite the user's question to be fully self-contained. Don't provide any answers, code or explanation. Simply rewrite the user's question to be fully self-contained. Only provide a single line question as output."),
             MessagesPlaceholder("chat_history"),
             ("human", "{input}")
         ])

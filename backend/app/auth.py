@@ -2,7 +2,7 @@ import os
 import uuid
 from dotenv import load_dotenv
 from jose import JWTError, jwt
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from fastapi import APIRouter, Depends, HTTPException, status
