@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -71,33 +70,33 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
   }
-  
+
   .chat-container::-webkit-scrollbar {
     width: 0.4rem;
   }
-  
+
   .chat-container::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .chat-container::-webkit-scrollbar-thumb {
     background-color: hsl(var(--muted-foreground) / 0.3);
     border-radius: 20px;
   }
-  
+
   .chat-sidebar::-webkit-scrollbar {
     width: 0.4rem;
   }
-  
+
   .chat-sidebar::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .chat-sidebar::-webkit-scrollbar-thumb {
     background-color: hsl(var(--muted-foreground) / 0.3);
     border-radius: 20px;
@@ -108,11 +107,11 @@
   .glass-card {
     @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-white/20 dark:border-gray-700/20 shadow-lg;
   }
-  
+
   .hero-gradient {
     @apply bg-gradient-to-br from-chatbot-secondary via-chatbot-primary to-chatbot-accent;
   }
-  
+
   .text-gradient {
     @apply bg-gradient-to-r from-chatbot-primary to-chatbot-accent bg-clip-text text-transparent;
   }

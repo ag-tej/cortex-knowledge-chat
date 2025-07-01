@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { AuthForms } from "@/components/auth/AuthForms";
@@ -8,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 const Landing: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   // Redirect to dashboard if already logged in
   React.useEffect(() => {
     if (user) {
@@ -21,11 +20,11 @@ const Landing: React.FC = () => {
       <header className="p-4 border-b">
         <div className="container flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-gradient">RAG Chatbot</span>
+            <span className="text-2xl font-bold text-gradient">Shiksha Setu</span>
           </div>
         </div>
       </header>
-      
+
       <main className="flex-1">
         <section className="py-20">
           <div className="container max-w-6xl">
@@ -35,7 +34,8 @@ const Landing: React.FC = () => {
                   Answer Questions with Your Documents & Websites
                 </h1>
                 <p className="text-xl text-muted-foreground">
-                  Upload PDFs and connect websites to create a personalized AI assistant that provides accurate, contextual answers.
+                  Upload PDFs and connect websites to create a personalized AI assistant that provides accurate,
+                  contextual answers.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button size="lg" className="gap-2">
@@ -58,23 +58,24 @@ const Landing: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="flex justify-center">
                 <AuthForms />
               </div>
             </div>
           </div>
         </section>
-        
+
         <section className="py-20 bg-muted/50">
           <div className="container max-w-6xl">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">How It Works</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                A powerful RAG (Retrieval-Augmented Generation) system that connects your documents with state-of-the-art AI.
+                A powerful RAG (Retrieval-Augmented Generation) system that connects your documents with
+                state-of-the-art AI.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-card p-6 rounded-lg shadow-sm">
                 <div className="mb-4 bg-primary/10 w-12 h-12 flex items-center justify-center rounded-full">
@@ -100,7 +101,7 @@ const Landing: React.FC = () => {
                   Upload your PDFs or add website URLs. Our system will process and index the content.
                 </p>
               </div>
-              
+
               <div className="bg-card p-6 rounded-lg shadow-sm">
                 <div className="mb-4 bg-primary/10 w-12 h-12 flex items-center justify-center rounded-full">
                   <svg
@@ -128,7 +129,7 @@ const Landing: React.FC = () => {
                   Ask any question related to your documents. The AI will search for relevant information.
                 </p>
               </div>
-              
+
               <div className="bg-card p-6 rounded-lg shadow-sm">
                 <div className="mb-4 bg-primary/10 w-12 h-12 flex items-center justify-center rounded-full">
                   <svg
@@ -157,7 +158,7 @@ const Landing: React.FC = () => {
             </div>
           </div>
         </section>
-        
+
         <section className="py-20">
           <div className="container max-w-3xl text-center">
             <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
@@ -168,13 +169,11 @@ const Landing: React.FC = () => {
           </div>
         </section>
       </main>
-      
+
       <footer className="py-6 border-t">
         <div className="container">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              © 2025 RAG Chatbot. All rights reserved.
-            </p>
+            <p className="text-sm text-muted-foreground">© 2025 Shiksha Setu. All rights reserved.</p>
             <div className="flex gap-6">
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
                 Terms

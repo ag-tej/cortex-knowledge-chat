@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,11 +8,7 @@ interface PageLayoutProps {
 const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
   const { user } = useAuth();
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      {children}
-    </div>
-  );
+  return <div className="min-h-screen flex flex-col">{children}</div>;
 };
 
 export default PageLayout;

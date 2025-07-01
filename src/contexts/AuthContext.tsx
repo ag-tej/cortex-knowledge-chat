@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -47,10 +46,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await fetch(`${backendUrl}/api/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
@@ -68,26 +67,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
-    
+
     try {
       // Use FormData for compatibility with OAuth2PasswordRequestForm
       const formData = new FormData();
-      formData.append('username', email); // Note: FastAPI OAuth2 expects 'username'
-      formData.append('password', password);
-      
+      formData.append("username", email); // Note: FastAPI OAuth2 expects 'username'
+      formData.append("password", password);
+
       const response = await fetch(`${backendUrl}/api/auth/login`, {
-        method: 'POST',
-        body: formData
+        method: "POST",
+        body: formData,
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to login");
       }
-      
+
       const data = await response.json();
       localStorage.setItem("auth_token", data.access_token);
-      
+
       // Fetch user profile with the token
       await fetchUserProfile(data.access_token);
       toast.success("Logged in successfully");
@@ -101,24 +100,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (email: string, password: string, name: string) => {
     setIsLoading(true);
-    
+
     try {
       const response = await fetch(`${backendUrl}/api/auth/signup`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, name })
+        body: JSON.stringify({ email, password, name }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to create account");
       }
-      
+
       const data = await response.json();
       localStorage.setItem("auth_token", data.access_token);
-      
+
       // Fetch user profile with the token
       await fetchUserProfile(data.access_token);
       toast.success("Account created successfully");

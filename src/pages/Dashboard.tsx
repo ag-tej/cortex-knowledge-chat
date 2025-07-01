@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatMessages } from "@/components/chat/ChatMessages";
@@ -10,14 +9,14 @@ import { useNavigate } from "react-router-dom";
 const Dashboard: React.FC = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     // If auth loading is complete and user is not logged in, redirect to landing
     if (!isLoading && !user) {
       navigate("/");
     }
   }, [user, isLoading, navigate]);
-  
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
@@ -29,7 +28,7 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
-  
+
   // Don't render dashboard content if not authenticated
   if (!user) {
     return null;
@@ -38,7 +37,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="h-screen flex overflow-hidden">
       <ChatSidebar />
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <ChatMessages />
         <UploadPanel />

@@ -30,14 +30,14 @@ from langchain_community.document_loaders import (
 # Initialize Embedding Model
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2",
-    model_kwargs={"device": "cpu"}
+    model_kwargs={"device": "cpu"} # mps for mac to use Apple's GPU
 )
 
 # Initialize LLM
 llm = OllamaLLM(
     model="llama3.2",
     temperature=0.5,
-    top_p=0.95,
+    top_p=0.5,
     num_ctx=2048,
     repeat_penalty=1.1,
     stop=["\nUser:"],

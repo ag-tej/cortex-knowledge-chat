@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -78,7 +77,12 @@ export const ChatSidebar: React.FC = () => {
                       className="h-7 text-sm"
                       autoFocus
                     />
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => handleSaveTitle(e, chat.id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={(e) => handleSaveTitle(e, chat.id)}
+                    >
                       <Save size={14} />
                     </Button>
                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEditing}>
@@ -115,9 +119,7 @@ export const ChatSidebar: React.FC = () => {
               </div>
             ))
           ) : (
-            <div className="text-center text-muted-foreground py-4">
-              No chats yet. Create a new one!
-            </div>
+            <div className="text-center text-muted-foreground py-4">No chats yet. Create a new one!</div>
           )}
         </div>
       </ScrollArea>
